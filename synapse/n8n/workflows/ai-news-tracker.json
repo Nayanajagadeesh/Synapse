@@ -1,0 +1,55 @@
+{
+  "name": "Synapse · AI news tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }] }
+      },
+      "id": "cron",
+      "name": "Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/frontpage?points=200",
+        "options": {}
+      },
+      "id": "rss",
+      "name": "Fetch RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.SYNAPSE_API_URL}}/api/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Synapse-Secret", "value": "={{$env.SYNAPSE_WEBHOOK_SECRET}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"agent.findings\",\n  \"agent_id\": \"PUT_AGENT_UUID_HERE\",\n  \"content\": $json.title + \"\\n\\n\" + $json.contentSnippet\n}",
+        "options": {}
+      },
+      "id": "post",
+      "name": "Post findings to Synapse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Daily 09:00": { "main": [[{ "node": "Fetch RSS", "type": "main", "index": 0 }]] },
+    "Fetch RSS": { "main": [[{ "node": "Post findings to Synapse", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

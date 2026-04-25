@@ -1,0 +1,26 @@
+# Local automation stack for Synapse.
+# n8n powers the "AI agents" feature — schedule workflows that fetch sources,
+# call back into Synapse via webhooks, and trigger notifications.
+version: "3.9"
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=UTC
+      # Synapse will verify this against incoming webhook calls
+      - SYNAPSE_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET:-change-me}
+      - SYNAPSE_API_URL=${SYNAPSE_API_URL:-http://host.docker.internal:3000}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+
+volumes:
+  n8n_data:
